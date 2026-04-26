@@ -1,0 +1,1503 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ChainGuard · Smart Contract Auditor</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      /* ════════════════════════════════════════════════════
+   DESIGN TOKENS
+   Light: warm cream base, deep charcoal text, emerald accent
+   Dark:  deep charcoal base, off-white text, teal accent
+════════════════════════════════════════════════════ */
+      :root {
+        --accent: #059669;
+        --accent-light: #34d399;
+        --accent-dark: #047857;
+        --accent-glow: rgba(5, 150, 105, 0.15);
+        --accent-glow2: rgba(5, 150, 105, 0.08);
+
+        --bg: #f5f2ed;
+        --bg-card: #fdfcfa;
+        --bg-sunken: #eeebe5;
+        --bg-code: #f1eee8;
+
+        --ink: #1a1714;
+        --ink-2: #3d3831;
+        --ink-3: #5c544a;
+        --ink-4: #8a8176;
+        --ink-inv: #fdfcfa;
+
+        --line: #ddd9d0;
+        --line-strong: #c9c4ba;
+
+        --crit: #dc2626;
+        --crit-bg: #fef2f2;
+        --high: #ea580c;
+        --high-bg: #fff7ed;
+        --med: #ca8a04;
+        --med-bg: #fefce8;
+        --safe: #059669;
+        --safe-bg: #f0fdf4;
+        --gas-c: #7c3aed;
+        --gas-bg: #f5f3ff;
+
+        --r-sm: 6px;
+        --r-md: 12px;
+        --r-lg: 20px;
+        --r-xl: 28px;
+
+        --sh-sm:
+          0 1px 3px rgba(26, 23, 20, 0.08), 0 1px 2px rgba(26, 23, 20, 0.06);
+        --sh-md:
+          0 4px 16px rgba(26, 23, 20, 0.1), 0 2px 6px rgba(26, 23, 20, 0.07);
+        --sh-lg:
+          0 16px 48px rgba(26, 23, 20, 0.13), 0 6px 20px rgba(26, 23, 20, 0.08);
+        --sh-acc: 0 4px 28px rgba(5, 150, 105, 0.32);
+
+        --ease: cubic-bezier(0.4, 0, 0.2, 1);
+        --t: 220ms;
+      }
+
+      [data-theme="dark"] {
+        --accent: #10b981;
+        --accent-light: #34d399;
+        --accent-dark: #059669;
+        --accent-glow: rgba(16, 185, 129, 0.18);
+        --accent-glow2: rgba(16, 185, 129, 0.07);
+
+        --bg: #141210;
+        --bg-card: #1c1916;
+        --bg-sunken: #111009;
+        --bg-code: #1a1815;
+
+        --ink: #f0ede8;
+        --ink-2: #c8c0b5;
+        --ink-3: #a8a095;
+        --ink-4: #6b645c;
+        --ink-inv: #141210;
+
+        --line: #2c2925;
+        --line-strong: #3d3a35;
+
+        --crit: #f87171;
+        --crit-bg: #2d1515;
+        --high: #fb923c;
+        --high-bg: #2a1a0a;
+        --med: #fbbf24;
+        --med-bg: #2a2208;
+        --safe: #10b981;
+        --safe-bg: #0a2018;
+        --gas-c: #a78bfa;
+        --gas-bg: #16123a;
+
+        --sh-sm: 0 1px 3px rgba(0, 0, 0, 0.5);
+        --sh-md: 0 4px 16px rgba(0, 0, 0, 0.55);
+        --sh-lg: 0 16px 48px rgba(0, 0, 0, 0.65);
+        --sh-acc: 0 4px 28px rgba(16, 185, 129, 0.28);
+      }
+
+      /* ── RESET ─────────────────────────────────────────── */
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        font-family: "Outfit", sans-serif;
+        font-size: 15px;
+        line-height: 1.65;
+        background: var(--bg);
+        color: var(--ink);
+        min-height: 100vh;
+        transition:
+          background var(--t) var(--ease),
+          color var(--t) var(--ease);
+        cursor: default;
+      }
+
+      /* Grain overlay for texture */
+      body::after {
+        content: "";
+        position: fixed;
+        inset: 0;
+        z-index: 999;
+        pointer-events: none;
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+        opacity: 0.028;
+      }
+
+      /* ── NAVBAR ────────────────────────────────────────── */
+      .nav {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 44px;
+        height: 58px;
+        background: var(--bg-card);
+        border-bottom: 1px solid var(--line);
+        box-shadow: var(--sh-sm);
+        transition:
+          background var(--t) var(--ease),
+          border-color var(--t) var(--ease);
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 11px;
+        text-decoration: none;
+        color: var(--ink);
+      }
+
+      .brand-shield {
+        width: 32px;
+        height: 32px;
+        background: var(--accent);
+        border-radius: var(--r-sm);
+        display: grid;
+        place-items: center;
+        font-size: 16px;
+        box-shadow: var(--sh-acc);
+        flex-shrink: 0;
+        transition:
+          transform var(--t) var(--ease),
+          box-shadow var(--t) var(--ease);
+      }
+      .brand:hover .brand-shield {
+        transform: rotate(-6deg) scale(1.08);
+        box-shadow: 0 6px 32px rgba(5, 150, 105, 0.45);
+      }
+
+      .brand-name {
+        font-family: "Bebas Neue", sans-serif;
+        font-size: 1.55rem;
+        letter-spacing: 2px;
+        color: var(--ink);
+        line-height: 1;
+      }
+
+      .brand-name span {
+        color: var(--accent);
+      }
+
+      .nav-right {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+
+      .nav-tag {
+        font-family: "Fira Code", monospace;
+        font-size: 10.5px;
+        color: var(--accent);
+        background: var(--accent-glow2);
+        border: 1px solid var(--accent-glow);
+        padding: 4px 11px;
+        border-radius: 4px;
+        letter-spacing: 0.5px;
+      }
+
+      /* ── THEME TOGGLE ──────────────────────────────────── */
+      .theme-wrap {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-family: "Fira Code", monospace;
+        font-size: 11px;
+        color: var(--ink-3);
+      }
+
+      .theme-pill {
+        position: relative;
+        width: 48px;
+        height: 26px;
+        background: var(--bg-sunken);
+        border: 1px solid var(--line-strong);
+        border-radius: 100px;
+        cursor: pointer;
+        transition:
+          background var(--t) var(--ease),
+          border-color var(--t) var(--ease);
+      }
+
+      [data-theme="dark"] .theme-pill {
+        background: var(--accent-dark);
+        border-color: var(--accent);
+      }
+
+      .theme-thumb {
+        position: absolute;
+        top: 3px;
+        left: 3px;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: var(--bg-card);
+        box-shadow: var(--sh-sm);
+        transition: transform var(--t) var(--ease);
+        display: grid;
+        place-items: center;
+        font-size: 10px;
+      }
+
+      [data-theme="dark"] .theme-thumb {
+        transform: translateX(22px);
+      }
+
+      /* ── PAGE ───────────────────────────────────────────── */
+      .page {
+        position: relative;
+        z-index: 1;
+        max-width: 920px;
+        margin: 0 auto;
+        padding: 52px 22px 90px;
+      }
+
+      /* ── HERO ───────────────────────────────────────────── */
+      .hero {
+        padding: 48px 0 52px;
+      }
+
+      .hero-kicker {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-family: "Fira Code", monospace;
+        font-size: 11px;
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+        color: var(--accent);
+        margin-bottom: 20px;
+      }
+
+      .kicker-dot {
+        width: 7px;
+        height: 7px;
+        background: var(--accent);
+        border-radius: 50%;
+        animation: blink 1.8s ease-in-out infinite;
+      }
+
+      @keyframes blink {
+        0%,
+        100% {
+          opacity: 1;
+          transform: scale(1);
+        }
+        50% {
+          opacity: 0.3;
+          transform: scale(1.6);
+        }
+      }
+
+      .hero-title {
+        font-family: "Bebas Neue", sans-serif;
+        font-size: clamp(3.5rem, 8vw, 6.5rem);
+        letter-spacing: 3px;
+        line-height: 0.95;
+        color: var(--ink);
+        margin-bottom: 22px;
+      }
+
+      .hero-title .accent-word {
+        color: var(--accent);
+        display: inline-block;
+        position: relative;
+      }
+
+      /* Underline sweep on accent word */
+      .hero-title .accent-word::after {
+        content: "";
+        position: absolute;
+        bottom: -4px;
+        left: 0;
+        width: 0;
+        height: 3px;
+        background: var(--accent);
+        border-radius: 2px;
+        animation: sweep 1.4s var(--ease) 0.5s forwards;
+      }
+
+      @keyframes sweep {
+        to {
+          width: 100%;
+        }
+      }
+
+      .hero-sub {
+        font-size: 1.05rem;
+        color: var(--ink-3);
+        font-weight: 500;
+        max-width: 540px;
+        margin-bottom: 36px;
+        line-height: 1.75;
+      }
+
+      /* Agent badges */
+      .agent-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 52px;
+      }
+
+      .agent-badge {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 9px 16px;
+        background: var(--bg-card);
+        border: 1px solid var(--line);
+        border-radius: var(--r-sm);
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--ink-2);
+        box-shadow: var(--sh-sm);
+        position: relative;
+        overflow: hidden;
+        transition:
+          color var(--t) var(--ease),
+          border-color var(--t) var(--ease),
+          transform var(--t) var(--ease),
+          box-shadow var(--t) var(--ease);
+      }
+
+      /* Shimmer fill on hover */
+      .agent-badge::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(135deg, var(--accent-glow), transparent);
+        opacity: 0;
+        transition: opacity var(--t) var(--ease);
+      }
+
+      .agent-badge:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+        transform: translateY(-2px);
+        box-shadow:
+          var(--sh-md),
+          0 0 0 3px var(--accent-glow);
+      }
+
+      .agent-badge:hover::before {
+        opacity: 1;
+      }
+
+      .badge-num {
+        font-family: "Fira Code", monospace;
+        font-size: 10px;
+        font-weight: 500;
+        background: var(--accent-glow);
+        color: var(--accent);
+        padding: 2px 7px;
+        border-radius: 3px;
+        letter-spacing: 0.3px;
+      }
+
+      /* ── CARD ───────────────────────────────────────────── */
+      .card {
+        background: var(--bg-card);
+        border: 1px solid var(--line);
+        border-radius: var(--r-lg);
+        padding: 36px;
+        margin-bottom: 22px;
+        box-shadow: var(--sh-md);
+        transition:
+          background var(--t) var(--ease),
+          border-color var(--t) var(--ease);
+        position: relative;
+        overflow: hidden;
+      }
+
+      /* Corner accent mark */
+      .card::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 3px;
+        height: 52px;
+        background: var(--accent);
+        border-radius: 0 0 3px 0;
+      }
+
+      .card-hd {
+        display: flex;
+        align-items: center;
+        gap: 13px;
+        margin-bottom: 28px;
+      }
+
+      .card-ico {
+        width: 40px;
+        height: 40px;
+        background: var(--accent-glow2);
+        border: 1px solid var(--accent-glow);
+        border-radius: var(--r-sm);
+        display: grid;
+        place-items: center;
+        font-size: 19px;
+        flex-shrink: 0;
+      }
+
+      .card-hd-text h2 {
+        font-family: "Bebas Neue", sans-serif;
+        font-size: 1.4rem;
+        letter-spacing: 1.5px;
+        color: var(--ink);
+        line-height: 1;
+      }
+
+      .card-hd-text p {
+        font-size: 12.5px;
+        color: var(--ink-4);
+        margin-top: 4px;
+        font-family: "Fira Code", monospace;
+      }
+
+      /* ── EXAMPLE BOX ────────────────────────────────────── */
+      .ex-box {
+        background: var(--bg-code);
+        border: 1px solid var(--line);
+        border-radius: var(--r-md);
+        padding: 18px 20px;
+        margin-bottom: 22px;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .ex-box::before {
+        content: "EXAMPLE";
+        position: absolute;
+        top: 10px;
+        right: 14px;
+        font-family: "Fira Code", monospace;
+        font-size: 9px;
+        letter-spacing: 2px;
+        color: var(--ink-4);
+      }
+
+      .ex-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 12px;
+      }
+
+      .ex-label {
+        font-family: "Fira Code", monospace;
+        font-size: 11px;
+        color: var(--accent);
+        letter-spacing: 0.5px;
+      }
+
+      .ex-btn {
+        font-family: "Outfit", sans-serif;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--accent);
+        background: var(--accent-glow);
+        border: 1px solid var(--accent-glow);
+        border-radius: var(--r-sm);
+        padding: 5px 12px;
+        cursor: pointer;
+        transition:
+          background var(--t) var(--ease),
+          transform var(--t) var(--ease),
+          box-shadow var(--t) var(--ease);
+      }
+
+      .ex-btn:hover {
+        background: var(--accent);
+        color: var(--ink-inv);
+        transform: translateY(-1px);
+        box-shadow: var(--sh-acc);
+      }
+
+      .ex-code {
+        font-family: "Fira Code", monospace;
+        font-size: 12px;
+        color: var(--ink-3);
+        line-height: 1.8;
+        white-space: pre;
+        overflow-x: auto;
+      }
+
+      /* ── FORM ELEMENTS ──────────────────────────────────── */
+      .frow {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 18px;
+        margin-bottom: 18px;
+      }
+      @media (max-width: 580px) {
+        .frow {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .fg {
+        display: flex;
+        flex-direction: column;
+        gap: 7px;
+        margin-bottom: 18px;
+      }
+      .frow .fg {
+        margin-bottom: 0;
+      }
+
+      .flabel {
+        font-size: 11.5px;
+        font-weight: 600;
+        letter-spacing: 0.8px;
+        text-transform: uppercase;
+        color: var(--ink-3);
+        font-family: "Fira Code", monospace;
+      }
+
+      .finput,
+      .fselect,
+      .ftextarea {
+        width: 100%;
+        padding: 11px 14px;
+        background: var(--bg-sunken);
+        border: 1.5px solid var(--line);
+        border-radius: var(--r-sm);
+        font-family: "Outfit", sans-serif;
+        font-size: 14px;
+        color: var(--ink);
+        outline: none;
+        -webkit-appearance: none;
+        transition:
+          border-color var(--t) var(--ease),
+          box-shadow var(--t) var(--ease),
+          background var(--t) var(--ease);
+      }
+
+      .ftextarea {
+        font-family: "Fira Code", monospace;
+        font-size: 12.5px;
+        resize: vertical;
+        min-height: 280px;
+        line-height: 1.75;
+        background: var(--bg-code);
+      }
+
+      .finput:focus,
+      .fselect:focus,
+      .ftextarea:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px var(--accent-glow);
+        background: var(--bg-card);
+      }
+
+      .fselect {
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23059669' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 14px center;
+        padding-right: 36px;
+        cursor: pointer;
+        background-color: var(--bg-sunken);
+      }
+
+      /* ── SUBMIT BUTTON ──────────────────────────────────── */
+      .submit-btn {
+        width: 100%;
+        margin-top: 6px;
+        padding: 15px 28px;
+        background: var(--accent);
+        color: var(--ink-inv);
+        border: none;
+        border-radius: var(--r-sm);
+        font-family: "Bebas Neue", sans-serif;
+        font-size: 1.2rem;
+        letter-spacing: 2.5px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        box-shadow: var(--sh-acc);
+        position: relative;
+        overflow: hidden;
+        transition:
+          transform var(--t) var(--ease),
+          box-shadow var(--t) var(--ease),
+          opacity var(--t) var(--ease);
+      }
+
+      /* Slide-right shimmer on hover */
+      .submit-btn::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(
+          90deg,
+          transparent 0%,
+          rgba(255, 255, 255, 0.18) 50%,
+          transparent 100%
+        );
+        transform: translateX(-100%);
+        transition: transform 0.5s var(--ease);
+      }
+
+      .submit-btn:hover:not(:disabled)::after {
+        transform: translateX(100%);
+      }
+
+      .submit-btn:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 36px rgba(5, 150, 105, 0.48);
+      }
+
+      .submit-btn:active:not(:disabled) {
+        transform: translateY(0);
+      }
+
+      .submit-btn:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+        box-shadow: none;
+      }
+
+      /* ── LOADING STEPS ──────────────────────────────────── */
+      .loading {
+        display: none;
+        margin-top: 22px;
+      }
+      .loading.on {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .lstep {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 16px;
+        background: var(--bg-sunken);
+        border: 1px solid var(--line);
+        border-radius: var(--r-sm);
+        font-family: "Fira Code", monospace;
+        font-size: 12.5px;
+        color: var(--ink-4);
+        opacity: 0.35;
+        transition:
+          opacity 0.4s var(--ease),
+          border-color 0.4s,
+          color 0.4s;
+      }
+
+      .lstep.on {
+        opacity: 1;
+        color: var(--ink-2);
+        border-color: var(--accent);
+      }
+      .lstep.done {
+        opacity: 0.6;
+      }
+
+      .spin {
+        width: 14px;
+        height: 14px;
+        border: 2px solid var(--line);
+        border-top-color: var(--accent);
+        border-radius: 50%;
+        flex-shrink: 0;
+        animation: rot 0.7s linear infinite;
+        opacity: 0;
+      }
+      .lstep.on .spin {
+        opacity: 1;
+      }
+      @keyframes rot {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      /* ── RESULTS ────────────────────────────────────────── */
+      .results {
+        display: none;
+      }
+      .results.on {
+        display: block;
+        animation: rise 0.4s var(--ease);
+      }
+
+      @keyframes rise {
+        from {
+          opacity: 0;
+          transform: translateY(18px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      /* Score strip */
+      .score-strip {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 14px;
+        margin-bottom: 18px;
+      }
+
+      .score-box {
+        background: var(--bg-sunken);
+        border: 1px solid var(--line);
+        border-radius: var(--r-md);
+        padding: 22px 18px;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+        transition:
+          border-color var(--t) var(--ease),
+          box-shadow var(--t) var(--ease),
+          transform var(--t) var(--ease);
+      }
+
+      /* Glow trace on hover */
+      .score-box::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: var(--r-md);
+        border: 1.5px solid transparent;
+        background:
+          linear-gradient(var(--bg-sunken), var(--bg-sunken)) padding-box,
+          linear-gradient(135deg, var(--accent), transparent) border-box;
+        opacity: 0;
+        transition: opacity var(--t) var(--ease);
+      }
+
+      .score-box:hover {
+        transform: translateY(-3px);
+        box-shadow: var(--sh-md);
+      }
+      .score-box:hover::after {
+        opacity: 1;
+      }
+
+      .snum {
+        font-family: "Bebas Neue", sans-serif;
+        font-size: 2.8rem;
+        letter-spacing: 1px;
+        line-height: 1;
+        color: var(--accent);
+        margin-bottom: 5px;
+      }
+
+      .slbl {
+        font-family: "Fira Code", monospace;
+        font-size: 10px;
+        letter-spacing: 1.2px;
+        text-transform: uppercase;
+        color: var(--ink-4);
+      }
+
+      /* Risk banner */
+      .risk-banner {
+        padding: 13px 18px;
+        border-radius: var(--r-sm);
+        font-weight: 600;
+        font-size: 13.5px;
+        margin-bottom: 28px;
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        border: 1px solid;
+        letter-spacing: 0.2px;
+        font-family: "Fira Code", monospace;
+      }
+
+      .rb-low {
+        background: var(--safe-bg);
+        color: var(--safe);
+        border-color: rgba(5, 150, 105, 0.3);
+      }
+      .rb-medium {
+        background: var(--med-bg);
+        color: var(--med);
+        border-color: rgba(202, 138, 4, 0.3);
+      }
+      .rb-high {
+        background: var(--crit-bg);
+        color: var(--crit);
+        border-color: rgba(220, 38, 38, 0.3);
+      }
+
+      /* Section heading */
+      .sec {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-family: "Bebas Neue", sans-serif;
+        font-size: 1.15rem;
+        letter-spacing: 2px;
+        color: var(--ink);
+        margin: 28px 0 13px;
+        padding-bottom: 10px;
+        border-bottom: 1.5px solid var(--line);
+      }
+
+      .sec-num {
+        font-family: "Fira Code", monospace;
+        font-size: 10px;
+        font-weight: 500;
+        background: var(--accent-glow);
+        color: var(--accent);
+        padding: 2px 8px;
+        border-radius: 3px;
+        letter-spacing: 0.3px;
+      }
+
+      /* Vuln cards */
+      .vcard {
+        border-radius: var(--r-md);
+        padding: 20px 22px;
+        margin-bottom: 12px;
+        border-left: 3px solid;
+        background: var(--bg-card);
+        border-top: 1px solid var(--line);
+        border-right: 1px solid var(--line);
+        border-bottom: 1px solid var(--line);
+        position: relative;
+        overflow: hidden;
+        transition:
+          transform var(--t) var(--ease),
+          box-shadow var(--t) var(--ease);
+      }
+
+      /* Left-edge glow reveal on hover */
+      .vcard::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: -3px;
+        width: 3px;
+        height: 0;
+        background: inherit;
+        transition: height 0.35s var(--ease);
+        filter: brightness(1.4);
+      }
+      .vcard:hover {
+        transform: translateX(4px);
+        box-shadow: var(--sh-md);
+      }
+
+      .vcard.critical {
+        border-left-color: var(--crit);
+        background: var(--crit-bg);
+      }
+      .vcard.high {
+        border-left-color: var(--high);
+        background: var(--high-bg);
+      }
+      .vcard.medium {
+        border-left-color: var(--med);
+        background: var(--med-bg);
+      }
+      .vcard.low {
+        border-left-color: var(--safe);
+        background: var(--safe-bg);
+      }
+
+      .vcard-top {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 10px;
+      }
+
+      .vcard-name {
+        font-family: "Outfit", sans-serif;
+        font-weight: 700;
+        font-size: 0.92rem;
+        color: var(--ink);
+      }
+
+      .chip {
+        font-family: "Fira Code", monospace;
+        font-size: 10px;
+        font-weight: 500;
+        padding: 3px 10px;
+        border-radius: 3px;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        flex-shrink: 0;
+      }
+
+      .chip-critical {
+        background: var(--crit);
+        color: #fff;
+      }
+      .chip-high {
+        background: var(--high);
+        color: #fff;
+      }
+      .chip-medium {
+        background: var(--med);
+        color: #fff;
+      }
+      .chip-low {
+        background: var(--safe);
+        color: #fff;
+      }
+
+      .vcard-body {
+        font-size: 13px;
+        color: var(--ink-2);
+        line-height: 1.7;
+      }
+      .vcard-body strong {
+        color: var(--ink-2);
+        font-weight: 600;
+      }
+
+      /* Gas cards */
+      .gcard {
+        background: var(--gas-bg);
+        border: 1px solid rgba(124, 58, 237, 0.2);
+        border-left: 3px solid var(--gas-c);
+        border-radius: var(--r-md);
+        padding: 17px 20px;
+        margin-bottom: 11px;
+        transition:
+          transform var(--t) var(--ease),
+          box-shadow var(--t) var(--ease);
+      }
+      .gcard:hover {
+        transform: translateX(4px);
+        box-shadow: var(--sh-sm);
+      }
+      .gcard-title {
+        font-weight: 600;
+        font-size: 0.88rem;
+        color: var(--gas-c);
+        margin-bottom: 6px;
+      }
+      .gcard-body {
+        font-size: 13px;
+        color: var(--ink-3);
+        line-height: 1.7;
+      }
+
+      /* Recs */
+      .rec-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        list-style: none;
+      }
+
+      .rec-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 12px 15px;
+        background: var(--bg-sunken);
+        border: 1px solid var(--line);
+        border-radius: var(--r-sm);
+        font-size: 13px;
+        color: var(--ink-3);
+        line-height: 1.65;
+        transition:
+          border-color var(--t) var(--ease),
+          transform var(--t) var(--ease);
+      }
+
+      .rec-item:hover {
+        border-color: var(--accent);
+        transform: translateX(3px);
+      }
+
+      .rec-tick {
+        color: var(--accent);
+        font-size: 14px;
+        flex-shrink: 0;
+        margin-top: 1px;
+      }
+
+      /* Report block */
+      .report-block {
+        background: var(--bg-code);
+        border: 1px solid var(--line);
+        border-radius: var(--r-md);
+        padding: 24px;
+        font-family: "Fira Code", monospace;
+        font-size: 12px;
+        color: var(--ink-3);
+        white-space: pre-wrap;
+        line-height: 1.9;
+        overflow: auto;
+        max-height: 420px;
+      }
+
+      /* Empty */
+      .empty {
+        padding: 26px;
+        text-align: center;
+        background: var(--safe-bg);
+        border: 1px solid rgba(5, 150, 105, 0.25);
+        border-radius: var(--r-md);
+        color: var(--safe);
+        font-family: "Fira Code", monospace;
+        font-size: 13px;
+        letter-spacing: 0.3px;
+      }
+
+      /* Stamp */
+      .stamp {
+        margin-top: 28px;
+        padding: 14px 18px;
+        background: var(--bg-sunken);
+        border: 1px solid var(--line);
+        border-radius: var(--r-sm);
+        text-align: center;
+        font-family: "Fira Code", monospace;
+        font-size: 11px;
+        color: var(--ink-4);
+        letter-spacing: 0.4px;
+      }
+
+      /* ── STAGGER ANIMATIONS on load ─────────────────────── */
+      .hero-kicker {
+        animation: fadeSlide 0.5s var(--ease) 0.1s both;
+      }
+      .hero-title {
+        animation: fadeSlide 0.5s var(--ease) 0.2s both;
+      }
+      .hero-sub {
+        animation: fadeSlide 0.5s var(--ease) 0.3s both;
+      }
+      .agent-row {
+        animation: fadeSlide 0.5s var(--ease) 0.4s both;
+      }
+      .card {
+        animation: fadeSlide 0.5s var(--ease) 0.5s both;
+      }
+
+      @keyframes fadeSlide {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      /* ── SCROLLBAR ──────────────────────────────────────── */
+      ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: var(--line-strong);
+        border-radius: 3px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: var(--accent);
+      }
+    </style>
+  </head>
+  <body>
+    <!-- ═══ NAVBAR ══════════════════════════════════════════ -->
+    <nav class="nav">
+      <a class="brand" href="#">
+        <div class="brand-shield">🛡️</div>
+        <div class="brand-name">Chain<span>Guard</span></div>
+      </a>
+      <div class="nav-right">
+        <div class="nav-tag">groq · llama-3.3-70b</div>
+        <div class="theme-wrap">
+          <span id="themeLabel">☀ light</span>
+          <button class="theme-pill" id="themeBtn" aria-label="Toggle theme">
+            <div class="theme-thumb" id="themeThumb">☀</div>
+          </button>
+        </div>
+      </div>
+    </nav>
+
+    <!-- ═══ PAGE ════════════════════════════════════════════ -->
+    <div class="page">
+      <!-- HERO -->
+      <div class="hero">
+        <div class="hero-kicker">
+          <div class="kicker-dot"></div>
+          AI-Powered Smart Contract Security
+        </div>
+
+        <h1 class="hero-title">
+          AUDIT.<br />
+          <span class="accent-word">DETECT.</span><br />
+          SECURE.
+        </h1>
+
+        <p class="hero-sub">
+          Three specialized AI agents simultaneously tear apart your smart
+          contract — hunting vulnerabilities, gas waste, and bad patterns — and
+          return a full audit in under a minute.
+        </p>
+
+        <div class="agent-row">
+          <div class="agent-badge">
+            <span class="badge-num">01</span> Vulnerability Scanner
+          </div>
+          <div class="agent-badge">
+            <span class="badge-num">02</span> Gas Optimizer
+          </div>
+          <div class="agent-badge">
+            <span class="badge-num">03</span> Code Quality Reviewer
+          </div>
+          <div class="agent-badge">
+            <span class="badge-num">↯</span> Solidity · Vyper · Rust · Move
+          </div>
+        </div>
+      </div>
+
+      <!-- FORM CARD -->
+      <div class="card">
+        <div class="card-hd">
+          <div class="card-ico">📤</div>
+          <div class="card-hd-text">
+            <h2>Submit Contract</h2>
+            <p>// paste your code and run the audit</p>
+          </div>
+        </div>
+
+        <div class="ex-box">
+          <div class="ex-top">
+            <span class="ex-label">// reentrancy_vuln.sol</span>
+            <button class="ex-btn" id="loadExample">Load Example →</button>
+          </div>
+          <div class="ex-code">
+            pragma solidity ^0.8.0; contract VulnerableBank { mapping(address =>
+            uint256) public balances; function withdraw(uint256 amount) public {
+            require(balances[msg.sender] >= amount); (bool sent, ) =
+            msg.sender.call{value: amount}(""); // ⚠ unsafe require(sent);
+            balances[msg.sender] -= amount; // state updated AFTER call } }
+          </div>
+        </div>
+
+        <form id="auditForm">
+          <div class="frow">
+            <div class="fg">
+              <label class="flabel" for="contractName">Contract Name</label>
+              <input
+                class="finput"
+                type="text"
+                id="contractName"
+                placeholder="VulnerableBank"
+                required
+              />
+            </div>
+            <div class="fg">
+              <label class="flabel" for="contractLanguage">Language</label>
+              <select class="fselect" id="contractLanguage">
+                <option value="Solidity">Solidity</option>
+                <option value="Vyper">Vyper</option>
+                <option value="Rust">Rust (Solana)</option>
+                <option value="Move">Move</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="fg">
+            <label class="flabel" for="contractCode">Source Code</label>
+            <textarea
+              class="ftextarea"
+              id="contractCode"
+              placeholder="// paste your contract here..."
+              required
+            ></textarea>
+          </div>
+
+          <button type="submit" class="submit-btn" id="submitBtn">
+            🔍 &nbsp; RUN SECURITY AUDIT
+          </button>
+        </form>
+
+        <div class="loading" id="loading">
+          <div class="lstep on" id="ls1">
+            <div class="spin"></div>
+            <span>agent_01 :: scanning vulnerabilities...</span>
+          </div>
+          <div class="lstep" id="ls2">
+            <div class="spin"></div>
+            <span>agent_02 :: analyzing gas usage...</span>
+          </div>
+          <div class="lstep" id="ls3">
+            <div class="spin"></div>
+            <span>agent_03 :: reviewing code quality...</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- RESULTS -->
+      <div class="results" id="results"></div>
+    </div>
+    <!-- /page -->
+
+    <script>
+      /* ── THEME ───────────────────────────────────────────── */
+      const html = document.documentElement;
+      const thBtn = document.getElementById("themeBtn");
+      const thLbl = document.getElementById("themeLabel");
+      const thThm = document.getElementById("themeThumb");
+
+      function setTheme(t) {
+        html.setAttribute("data-theme", t);
+        localStorage.setItem("cg-theme", t);
+        const dk = t === "dark";
+        thLbl.textContent = dk ? "☽ dark" : "☀ light";
+        thThm.textContent = dk ? "☽" : "☀";
+      }
+
+      setTheme(localStorage.getItem("cg-theme") || "light");
+      thBtn.addEventListener("click", () =>
+        setTheme(
+          html.getAttribute("data-theme") === "light" ? "dark" : "light",
+        ),
+      );
+
+      /* ── EXAMPLE ─────────────────────────────────────────── */
+      const EXAMPLE_CODE = `pragma solidity ^0.8.0;
+
+contract VulnerableBank {
+    mapping(address => uint256) public balances;
+
+    function deposit() public payable {
+        balances[msg.sender] += msg.value;
+    }
+
+    function withdraw(uint256 amount) public {
+        require(balances[msg.sender] >= amount, "Insufficient balance");
+        (bool sent, ) = msg.sender.call{value: amount}("");
+        require(sent, "Transfer failed");
+        balances[msg.sender] -= amount; // ⚠ state change AFTER external call
+    }
+
+    function getBalance() public view returns (uint256) {
+        return balances[msg.sender];
+    }
+}`;
+
+      document.getElementById("loadExample").addEventListener("click", () => {
+        document.getElementById("contractName").value = "VulnerableBank";
+        document.getElementById("contractCode").value = EXAMPLE_CODE;
+      });
+
+      /* ── LOADING STEPPER ─────────────────────────────────── */
+      let stepTimer;
+
+      function startSteps() {
+        ["ls1", "ls2", "ls3"].forEach((id) => {
+          const el = document.getElementById(id);
+          el.classList.remove("on", "done");
+        });
+        document.getElementById("ls1").classList.add("on");
+        let cur = 0;
+        stepTimer = setInterval(() => {
+          if (cur < 2) {
+            document
+              .getElementById(["ls1", "ls2", "ls3"][cur])
+              .classList.replace("on", "done");
+            cur++;
+            document
+              .getElementById(["ls1", "ls2", "ls3"][cur])
+              .classList.add("on");
+          }
+        }, 17000);
+      }
+
+      function stopSteps() {
+        clearInterval(stepTimer);
+        ["ls1", "ls2", "ls3"].forEach((id) => {
+          const el = document.getElementById(id);
+          el.classList.remove("on");
+          el.classList.add("done");
+        });
+      }
+
+      /* ── SUBMIT ──────────────────────────────────────────── */
+      document
+        .getElementById("auditForm")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const sbtn = document.getElementById("submitBtn");
+          const loading = document.getElementById("loading");
+          const results = document.getElementById("results");
+
+          sbtn.disabled = true;
+          sbtn.textContent = "⏳  AUDITING...";
+          loading.classList.add("on");
+          results.classList.remove("on");
+          startSteps();
+
+          try {
+            const res = await fetch("/audit", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                contract_name: document.getElementById("contractName").value,
+                contract_language:
+                  document.getElementById("contractLanguage").value,
+                contract_code: document.getElementById("contractCode").value,
+              }),
+            });
+
+            if (!res.ok) {
+              const err = await res.json();
+              throw new Error(err.detail || "Audit failed");
+            }
+
+            stopSteps();
+            render(await res.json());
+          } catch (err) {
+            stopSteps();
+            alert(
+              "❌ " +
+                err.message +
+                "\n\nCheck: GROQ_API_KEY is set & backend is running.",
+            );
+          } finally {
+            sbtn.disabled = false;
+            sbtn.innerHTML = "🔍 &nbsp; RUN SECURITY AUDIT";
+            loading.classList.remove("on");
+          }
+        });
+
+      /* ── RENDER ──────────────────────────────────────────── */
+      function render(d) {
+        const rs = d.severity_score;
+        const [rlabel, rcls] =
+          rs >= 7
+            ? ["■ HIGH RISK — immediate action required", "rb-high"]
+            : rs >= 4
+              ? ["▲ MEDIUM RISK — review recommended", "rb-medium"]
+              : ["● LOW RISK — contract appears secure", "rb-low"];
+
+        /* Vulnerabilities */
+        const vulnHtml = d.vulnerabilities?.length
+          ? d.vulnerabilities
+              .map(
+                (v) => `
+        <div class="vcard ${v.severity.toLowerCase()}">
+          <div class="vcard-top">
+            <span class="vcard-name">${v.type}</span>
+            <span class="chip chip-${v.severity.toLowerCase()}">${v.severity}</span>
+          </div>
+          <div class="vcard-body">
+            <strong>Description:</strong> ${v.description}<br>
+            <strong>Fix:</strong> ${v.recommendation}
+          </div>
+        </div>`,
+              )
+              .join("")
+          : `<div class="empty">// no vulnerabilities detected — contract looks clean</div>`;
+
+        /* Gas */
+        const gasHtml = d.gas_optimizations?.length
+          ? `<div class="sec"><span class="sec-num">02</span> GAS OPTIMIZATIONS</div>` +
+            d.gas_optimizations
+              .map(
+                (o) => `
+        <div class="gcard">
+          <div class="gcard-title">${o.issue}</div>
+          <div class="gcard-body">
+            <strong>Location:</strong> ${o.location} &nbsp;·&nbsp;
+            <strong>Est. Savings:</strong> ${o.potential_savings}<br>
+            <strong>Technique:</strong> ${o.technique}
+          </div>
+        </div>`,
+              )
+              .join("")
+          : "";
+
+        /* Recs */
+        const recsHtml = d.security_recommendations?.length
+          ? `<div class="sec"><span class="sec-num">03</span> RECOMMENDATIONS</div>
+       <ul class="rec-list">` +
+            d.security_recommendations
+              .map(
+                (r) =>
+                  `<li class="rec-item"><span class="rec-tick">✓</span>${r}</li>`,
+              )
+              .join("") +
+            `</ul>`
+          : "";
+
+        document.getElementById("results").innerHTML = `
+    <div class="card">
+      <div class="card-hd">
+        <div class="card-ico">📊</div>
+        <div class="card-hd-text">
+          <h2>${d.contract_name}</h2>
+          <p>// ${new Date(d.timestamp).toLocaleString()}</p>
+        </div>
+      </div>
+
+      <div class="score-strip">
+        <div class="score-box">
+          <div class="snum">${d.code_quality_score}</div>
+          <div class="slbl">Quality Score</div>
+        </div>
+        <div class="score-box">
+          <div class="snum">${d.vulnerabilities.length}</div>
+          <div class="slbl">Vulnerabilities</div>
+        </div>
+        <div class="score-box">
+          <div class="snum">${d.severity_score}<span style="font-size:.45em;letter-spacing:1px">/10</span></div>
+          <div class="slbl">Risk Score</div>
+        </div>
+      </div>
+
+      <div class="risk-banner ${rcls}">${rlabel}</div>
+
+      <div class="sec"><span class="sec-num">01</span> SECURITY VULNERABILITIES</div>
+      ${vulnHtml}
+
+      ${gasHtml}
+      ${recsHtml}
+
+      <div class="sec"><span class="sec-num">04</span> FULL ANALYSIS REPORT</div>
+      <div class="report-block">${d.detailed_report}</div>
+
+      <div class="stamp">
+        chainguard v1.0 &nbsp;·&nbsp; crewai multi-agent &nbsp;·&nbsp; groq llama-3.3-70b-versatile
+      </div>
+    </div>`;
+
+        document.getElementById("results").classList.add("on");
+        document
+          .getElementById("results")
+          .scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    </script>
+  </body>
+</html>
