@@ -1,20 +1,20 @@
-# 🛡️ ChainGuard (Smart Contract Security Auditor)
+# ChainGuard (Smart Contract Security Auditor)
 
 AI-powered smart contract auditing API built with **FastAPI**, **CrewAI**, and **LLMs**. Automatically detects vulnerabilities, suggests gas optimizations, and evaluates code quality.
 
 ---
 
-## 🚀 Features
+## Features
 
-* 🔍 **Security Analysis** — Detects common vulnerabilities (reentrancy, access control, etc.)
-* ⚡ **Gas Optimization** — Suggests ways to reduce transaction costs
-* 📊 **Code Quality Scoring** — Rates contract quality (0–100)
-* 🤖 **Multi-Agent AI System** — Uses CrewAI agents for specialized analysis
-* 🌐 **REST API** — Easy integration with frontend or other tools
+* 1) **Security Analysis** — Detects common vulnerabilities (reentrancy, access control, etc.)
+* 2) **Gas Optimization** — Suggests ways to reduce transaction costs
+* 3) **Code Quality Scoring** — Rates contract quality (0–100)
+* 4) **Multi-Agent AI System** — Uses CrewAI agents for specialized analysis
+* 5) **REST API** — Easy integration with frontend or other tools
 
 ---
 
-## 🧱 Tech Stack
+## Tech Stack
 
 * **FastAPI**
 * **CrewAI**
@@ -24,7 +24,7 @@ AI-powered smart contract auditing API built with **FastAPI**, **CrewAI**, and *
 
 ---
 
-## 📦 Installation
+## Installation
 
 ```bash
 git clone <your-repo-url>
@@ -38,7 +38,7 @@ pip install -r requirements.txt
 
 ---
 
-## 🔑 Environment Variables
+## Environment Variables
 
 Create a `.env` file in the root directory:
 
@@ -54,7 +54,7 @@ GOOGLE_API_KEY=your_google_api_key
 
 ---
 
-## ▶️ Run the Server
+## Run the Server
 
 ```bash
 python main.py
