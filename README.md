@@ -2,8 +2,6 @@
 
 AI-powered smart contract auditing API built with **FastAPI**, **CrewAI**, and **LLMs**. Automatically detects vulnerabilities, suggests gas optimizations, and evaluates code quality.
 
-🔗 **Live Demo:** [https://your-live-app-link.com](https://your-live-app-link.com)
-
 ---
 
 ## 🚀 Features
