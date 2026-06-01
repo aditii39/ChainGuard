@@ -6,11 +6,11 @@ AI-powered smart contract auditing API built with **FastAPI**, **CrewAI**, and *
 
 ## Features
 
-* 1) **Security Analysis** — Detects common vulnerabilities (reentrancy, access control, etc.)
-* 2) **Gas Optimization** — Suggests ways to reduce transaction costs
-* 3) **Code Quality Scoring** — Rates contract quality (0–100)
-* 4) **Multi-Agent AI System** — Uses CrewAI agents for specialized analysis
-* 5) **REST API** — Easy integration with frontend or other tools
+1) **Security Analysis** — Detects common vulnerabilities (reentrancy, access control, etc.)
+2) **Gas Optimization** — Suggests ways to reduce transaction costs
+3) **Code Quality Scoring** — Rates contract quality (0–100)
+4) **Multi-Agent AI System** — Uses CrewAI agents for specialized analysis
+5) **REST API** — Easy integration with frontend or other tools
 
 ---
 
